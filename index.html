@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>记忆与观察站 · 人生护照</title>
+<style>
+:root{
+  --night:#fff9f0; --raise:#f1e7d4; --card:#ffffff;
+  --ink:#26211b; --ink-dim:#7d7261; --line:#e8dcc4;
+  --foil:#ffc838; --foil-dim:#7a5200;
+  --seal:#c4402a; --seal-deep:#f25c3d;
+  --leaf:#2f9e63; --leaf-deep:#1e7a34;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --pop:cubic-bezier(.34,1.56,.64,1);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;min-height:100dvh;background:var(--night);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei","Helvetica Neue",sans-serif;
+  display:flex;flex-direction:column;overflow-x:hidden;position:relative;
+}
+.blob{position:fixed;border-radius:50%;background:var(--foil);z-index:0;pointer-events:none}
+.blob.b1{width:min(46vw,340px);aspect-ratio:1;right:-10vw;top:-14vw;opacity:.55}
+.blob.b2{width:min(38vw,280px);aspect-ratio:1;left:-13vw;bottom:-14vw;opacity:.45}
+.blob.b3{width:min(16vw,120px);aspect-ratio:1;right:6vw;bottom:8vh;opacity:.28}
+
+.wrap{position:relative;z-index:1;flex:1;width:100%;max-width:940px;margin:0 auto;
+  padding:18px 20px 44px;display:flex;flex-direction:column}
+
+.navback{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;
+  background:var(--card);border:1px solid var(--line);border-radius:999px;
+  padding:8px 15px;font-size:13px;color:var(--ink);text-decoration:none;font-weight:600;
+  box-shadow:0 2px 6px rgba(38,33,27,.05);transition:.15s var(--ease)}
+.navback:hover{background:var(--raise)}
+header.top{text-align:center;margin:22px 0 20px;transition:.35s var(--ease)}
+header.top.compact{margin:10px 0 14px}
+header.top.compact .logo,header.top.compact .sub{display:none}
+header.top.compact h1{font-size:clamp(21px,5vw,28px)}
+.logo{display:inline-flex;gap:5px;padding:8px 10px;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;box-shadow:0 3px 10px rgba(38,33,27,.06);margin-bottom:14px}
+.logo i{width:11px;height:26px;border-radius:6px;display:block}
+.logo i:nth-child(1){background:var(--ink)}
+.logo i:nth-child(2){background:var(--seal-deep)}
+.logo i:nth-child(3){background:var(--foil)}
+.logo i:nth-child(4){background:var(--leaf)}
+.kicker{font-size:11px;letter-spacing:.34em;color:var(--ink-dim);font-weight:700;text-transform:uppercase}
+h1{margin:9px 0 6px;font-size:clamp(28px,7vw,44px);font-weight:900;letter-spacing:-.01em;line-height:1.1}
+.sub{color:var(--ink-dim);font-size:13.5px;line-height:1.6}
+
+.screen{display:none;flex:1;flex-direction:column;animation:fade .4s var(--ease) both}
+.screen.active{display:flex}
+@keyframes fade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.center{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;flex:1}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px 20px;
+  box-shadow:0 6px 24px rgba(38,33,27,.06)}
+.label{font-size:11px;color:var(--ink-dim);letter-spacing:.24em;font-weight:700;margin-bottom:14px;text-transform:uppercase}
+.tag{display:inline-block;background:var(--raise);border-radius:999px;padding:7px 18px;
+  font-size:12px;font-weight:800;letter-spacing:.18em;color:var(--foil-dim)}
+.tag.seal{background:rgba(196,64,42,.1);color:var(--seal)}
+.tag.leaf{background:rgba(47,158,99,.12);color:var(--leaf-deep)}
+.hint{font-size:12.5px;color:var(--ink-dim);line-height:1.6;max-width:520px}
+
+.people{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.pbtn{background:var(--night);border:2px solid var(--line);border-radius:18px;color:var(--ink);
+  padding:20px 22px;min-width:104px;cursor:pointer;transition:.18s var(--ease);font-family:inherit}
+.pbtn .n{font-size:32px;font-weight:900;line-height:1.05}
+.pbtn .u{font-size:12px;color:var(--ink-dim);letter-spacing:.1em;font-weight:800;margin-left:3px}
+.pbtn .d{display:block;font-size:12px;color:var(--ink-dim);margin-top:7px;font-weight:600}
+.pbtn:hover{transform:translateY(-3px);border-color:#dccfae}
+.pbtn.sel{border-color:var(--ink);background:var(--foil);box-shadow:0 6px 18px rgba(255,200,56,.45)}
+.pbtn.sel .d,.pbtn.sel .u{color:var(--foil-dim)}
+
+.btn{appearance:none;border:none;cursor:pointer;font-family:inherit;font-weight:800;letter-spacing:.08em;
+  padding:15px 32px;border-radius:999px;font-size:15px;color:var(--night);background:var(--ink);
+  box-shadow:0 6px 18px rgba(38,33,27,.22);transition:.16s var(--ease)}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:var(--raise);color:var(--ink);box-shadow:none}
+.btn.ghost:hover{background:#e9dcc2}
+.btn.ok{background:var(--leaf);color:#fff;box-shadow:0 6px 18px rgba(47,158,99,.3)}
+.btn.no{background:var(--seal);color:#fff;box-shadow:0 6px 18px rgba(196,64,42,.28)}
+.btn[disabled]{opacity:.32;pointer-events:none;box-shadow:none}
+.btnrow{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+/* 问号方块 */
+.blocks{display:flex;gap:clamp(20px,8vw,64px);justify-content:center;margin:6px 0;flex-wrap:wrap}
+.blockwrap{display:flex;flex-direction:column;align-items:center;gap:14px;position:relative}
+.block{--s:clamp(112px,29vw,148px);width:var(--s);height:var(--s);border-radius:20px;position:relative;cursor:pointer;
+  background:var(--foil);border:3px solid var(--ink);
+  box-shadow:0 8px 0 var(--ink),0 18px 28px rgba(38,33,27,.18);
+  display:flex;align-items:center;justify-content:center;animation:bob 1.8s ease-in-out infinite;transition:filter .2s}
+.block::before,.block::after{content:"";position:absolute;width:9px;height:9px;background:var(--ink);border-radius:3px}
+.block::before{left:11px;top:11px;box-shadow:calc(var(--s) - 37px) 0 0 var(--ink)}
+.block::after{left:11px;bottom:11px;box-shadow:calc(var(--s) - 37px) 0 0 var(--ink)}
+.block .q{font-size:calc(var(--s) * .46);font-weight:900;color:var(--ink);line-height:1}
+.block:hover{filter:brightness(1.04)}
+.blocks.locked .block{animation:none;cursor:default}
+.block.bump{animation:bump .45s var(--pop)}
+@keyframes bump{0%{transform:translateY(0)}35%{transform:translateY(-30px)}100%{transform:translateY(0)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.block.dead{background:var(--raise);box-shadow:0 4px 0 #d6c9ad,0 8px 14px rgba(38,33,27,.08);border-color:#d6c9ad;opacity:.6}
+.block.dead .q{color:#b5a88c;font-size:calc(var(--s) * .3)}
+.block.opened{background:var(--ink)}
+.block.opened .q{color:var(--foil);font-size:calc(var(--s) * .34)}
+.block.opened::before,.block.opened::after{background:var(--foil);opacity:.35}
+.blabel{font-size:13px;color:var(--ink-dim);min-height:20px;font-weight:800;letter-spacing:.14em}
+.blabel.hit{color:var(--ink)}
+.blabel.off{color:#bcb09a}
+.coin{position:absolute;left:50%;top:6px;transform:translate(-50%,0);font-size:34px;pointer-events:none;opacity:0}
+.coin.pop{animation:coin .85s var(--ease) forwards}
+@keyframes coin{0%{opacity:1;transform:translate(-50%,0) scale(.5)}
+  60%{opacity:1;transform:translate(-50%,-104px) scale(1.1)}
+  100%{opacity:0;transform:translate(-50%,-140px) scale(.85)}}
+
+/* 计时 */
+.timerbox{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+.timer{font-size:clamp(44px,12vw,70px);font-weight:900;font-variant-numeric:tabular-nums;
+  line-height:1;letter-spacing:-.02em;color:var(--ink)}
+.timer small{font-size:.28em;font-weight:800;letter-spacing:.2em;color:var(--ink-dim);margin-left:6px;vertical-align:super}
+.timer.warn{color:var(--seal);animation:pulse .5s ease-in-out infinite alternate}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.07)}}
+.bar{height:9px;border-radius:999px;background:var(--raise);overflow:hidden;width:min(520px,100%)}
+.bar > i{display:block;height:100%;border-radius:999px;background:var(--foil);width:100%}
+.bar.warnbar > i{background:var(--seal-deep)}
+
+/* ===== 白色桌面 · 不规则散放 ===== */
+.tablewrap{position:relative;width:100%;max-width:700px;border-radius:24px;overflow:hidden;
+  background:#fff;border:1px solid var(--line);box-shadow:0 14px 36px rgba(38,33,27,.1);
+  aspect-ratio:4/3}
+@media(max-width:560px){ .tablewrap{aspect-ratio:1/1} }
+.desk{position:absolute;inset:0}
+.desk::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:radial-gradient(125% 105% at 50% -10%,rgba(38,33,27,0) 58%,rgba(38,33,27,.055) 100%)}
+
+.obj{position:absolute;display:flex;flex-direction:column;align-items:center;gap:7px;
+  transform:translate(-50%,-50%);animation:obj-in .45s var(--ease) both}
+@keyframes obj-in{from{opacity:0}to{opacity:1}}
+.obj .art{position:relative;width:var(--sz);height:var(--sz);
+  transform:rotate(var(--rot)) scale(var(--sc));
+  filter:drop-shadow(0 0 1.1px var(--cd)) drop-shadow(0 6px 7px rgba(38,33,27,.20));
+  animation:art-in .55s var(--pop) both}
+@keyframes art-in{
+  from{transform:rotate(var(--rot)) scale(calc(var(--sc) * .25))}
+  to{transform:rotate(var(--rot)) scale(var(--sc))}
+}
+/* 物体本体：同色渐变受光，被 emoji 形状裁出来 */
+.obj .sil{position:absolute;inset:0;display:grid;place-items:center;
+  background:linear-gradient(155deg,var(--cl) 0%,var(--c) 50%,var(--cd) 100%);
+  -webkit-mask:var(--m) center/contain no-repeat; mask:var(--m) center/contain no-repeat}
+/* 高光 */
+.obj .sil::before{content:"";position:absolute;inset:0;
+  background:linear-gradient(158deg,rgba(255,255,255,.62) 0%,rgba(255,255,255,.12) 34%,transparent 52%);
+  mix-blend-mode:soft-light}
+/* 叠一层原 emoji（只取明暗），让物体保留自身细节，同时整体被染成指定颜色 */
+.obj .sil::after{content:attr(data-e);font-size:calc(var(--sz) * .82);line-height:1;
+  mix-blend-mode:luminosity;opacity:.5;
+  filter:grayscale(1) contrast(.5) brightness(1.12)}
+.obj .emo{font-size:var(--sz);line-height:1;display:none;filter:drop-shadow(0 3px 3px rgba(38,33,27,.2))}
+/* 名牌 */
+.obj .nm{display:none;font-size:clamp(9px,2.1vw,11px);font-weight:800;color:var(--ink);white-space:nowrap;
+  background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 9px;
+  box-shadow:0 2px 5px rgba(38,33,27,.07)}
+.desk.named .obj .nm{display:block}   /* 只有结果页「回看桌面」才标名字 */
+/* 不支持 mask 时的降级：真实 emoji + 彩色圆底 */
+body.nomask .obj .art{display:none}
+body.nomask .obj .emo{display:block;background:var(--c);border-radius:50%;padding:6px;box-sizing:content-box}
+
+/* 盖布后的干扰画面：清掉短期复述缓存 */
+.distract{position:absolute;inset:0;z-index:6;display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;background:var(--ink);color:var(--night)}
+.distract.on{display:flex;animation:fade .3s var(--ease) both}
+.distract .dlab{font-size:12px;letter-spacing:.24em;font-weight:800;color:var(--foil)}
+.distract .dnum{font-size:clamp(56px,17vw,104px);font-weight:900;letter-spacing:.12em;
+  font-variant-numeric:tabular-nums;line-height:1}
+.distract .dsub{font-size:13px;color:rgba(255,249,240,.66);font-weight:600}
+.distract .dbar{height:6px;width:min(240px,60%);border-radius:999px;background:rgba(255,249,240,.2);overflow:hidden}
+.distract .dbar i{display:block;height:100%;background:var(--foil);width:100%}
+
+/* 结果页回看 */
+.reviewdesk{width:100%;max-width:640px;display:none;flex-direction:column;gap:10px;align-items:center}
+.reviewdesk.on{display:flex}
+
+.cloth{position:absolute;inset:0;z-index:5;transform:translateY(-106%);
+  background:repeating-linear-gradient(45deg,rgba(0,0,0,.07) 0 13px,transparent 13px 26px),
+    linear-gradient(180deg,var(--seal-deep) 0%,var(--seal) 48%,#9c3020 100%);
+  box-shadow:inset 0 18px 34px rgba(255,255,255,.14),inset 0 -30px 60px rgba(0,0,0,.35);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
+.cloth .ctxt{font-size:clamp(19px,5vw,27px);font-weight:900;letter-spacing:.26em;color:#fff6ea}
+.cloth .csub{font-size:11px;color:rgba(255,246,234,.62);letter-spacing:.3em;font-weight:700}
+.cloth.drop{animation:drop 1s cubic-bezier(.6,.05,.25,1.12) forwards}
+@keyframes drop{0%{transform:translateY(-106%)}70%{transform:translateY(3%)}86%{transform:translateY(-2%)}100%{transform:translateY(0)}}
+
+/* 经文卡 */
+.verse{background:var(--card);color:var(--ink);border-radius:24px;padding:30px 24px;
+  border:1px solid var(--line);box-shadow:0 14px 36px rgba(38,33,27,.09);max-width:640px;width:100%;text-align:center;
+  position:relative;overflow:hidden;transition:filter .5s var(--ease),opacity .5s var(--ease)}
+.verse::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;
+  background:linear-gradient(90deg,var(--ink) 0 25%,var(--seal-deep) 25% 50%,var(--foil) 50% 75%,var(--leaf) 75% 100%)}
+.verse .ref{font-size:12px;font-weight:800;letter-spacing:.2em;color:var(--foil-dim);margin-bottom:14px}
+.verse .txt{font-size:clamp(17px,4.4vw,23px);line-height:1.95;font-weight:600}
+.verse.hidden-v{filter:blur(16px);opacity:.28;user-select:none}
+
+/* 问答 */
+.qcard{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:28px 22px;
+  max-width:640px;margin:0 auto;width:100%;box-shadow:0 12px 32px rgba(38,33,27,.08);text-align:left}
+.qnum{font-size:11px;letter-spacing:.26em;color:var(--ink-dim);font-weight:800}
+.qtext{font-size:clamp(19px,5vw,26px);font-weight:900;line-height:1.65;margin:12px 0 2px}
+.opts{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.opt{background:var(--night);border:1px solid var(--line);border-radius:14px;padding:12px 15px;font-size:15px;font-weight:600}
+.answer{margin-top:20px;padding:18px;border-radius:16px;background:rgba(47,158,99,.09);
+  border:1px dashed rgba(47,158,99,.5);display:none;animation:fade .3s var(--ease) both}
+.answer.show{display:block}
+.answer .alab{font-size:11px;letter-spacing:.24em;color:var(--leaf-deep);font-weight:800}
+.answer .atxt{font-size:clamp(19px,5.2vw,26px);font-weight:900;margin-top:7px;line-height:1.4;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:8px;background:var(--night);border:1px solid var(--line);
+  border-radius:999px;padding:6px 14px 6px 8px;font-size:.8em}
+.chip .dotc{width:20px;height:20px;border-radius:50%;border:1px solid rgba(38,33,27,.15);flex:0 0 auto}
+.dots{display:flex;gap:8px;justify-content:center}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--line);transition:.2s}
+.dot.done{background:var(--leaf)}
+.dot.wrong{background:var(--seal)}
+.dot.cur{background:var(--ink);transform:scale(1.25)}
+
+/* 结果 */
+.scorecard{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:30px 24px;
+  box-shadow:0 14px 36px rgba(38,33,27,.09);max-width:640px;width:100%}
+.bigscore{font-size:clamp(52px,15vw,80px);font-weight:900;line-height:1;letter-spacing:-.03em}
+.bigscore .tot{color:var(--ink-dim);font-size:.5em}
+.rmsg{font-size:clamp(18px,5vw,24px);font-weight:900;margin-top:8px}
+.rsub{color:var(--ink-dim);font-size:13.5px;line-height:1.7;margin-top:8px}
+.review{width:100%;max-width:640px;text-align:left;display:flex;flex-direction:column;gap:8px}
+.rrow{display:flex;gap:11px;align-items:flex-start;background:var(--card);border:1px solid var(--line);
+  border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.6}
+.rrow .mk{font-size:15px;flex:0 0 auto;margin-top:1px}
+.rrow b{font-weight:800}
+.rrow .ans{color:var(--foil-dim)}
+footer.foot{text-align:center;color:#c3b79f;font-size:10.5px;margin-top:26px;letter-spacing:.24em;font-weight:700}
+@media(max-width:420px){ .btn{padding:14px 24px;font-size:14px} }
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+
+<div class="wrap">
+  <a class="navback" href="https://lifepassport.netlify.app/staff">← 工作人员</a>
+
+  <header class="top" id="topHead">
+    <div class="logo"><i></i><i></i><i></i><i></i></div>
+    <div class="kicker">Life Passport · Station 05</div>
+    <h1>记忆与观察站</h1>
+    <div class="sub">Memory &amp; Observation · Solo 优势关</div>
+  </header>
+
+  <!-- 0 人数 -->
+  <section class="screen active" id="s-start">
+    <div class="center">
+      <div class="panel" style="width:100%;max-width:600px">
+        <div class="label">本组人数</div>
+        <div class="people" id="people">
+          <button class="pbtn" data-n="1"><span class="n">1</span><span class="u">人</span></button>
+          <button class="pbtn" data-n="2"><span class="n">2</span><span class="u">人</span></button>
+          <button class="pbtn" data-n="3"><span class="n">3</span><span class="u">人</span></button>
+        </div>
+      </div>
+      <button class="btn" id="toBlocks" disabled>开 始 挑 战</button>
+      <div class="hint">工作人员操作 · 参与者暂时不要看屏幕</div>
+    </div>
+  </section>
+
+  <!-- 1 问号方块 -->
+  <section class="screen" id="s-blocks">
+    <div class="center">
+      <div class="tag">敲 开 一 个 方 块</div>
+      <div class="blocks" id="blocks">
+        <div class="blockwrap">
+          <div class="block" data-i="0"><span class="q">?</span><span class="coin">🪙</span></div>
+          <div class="blabel" data-l="0">方块 A</div>
+        </div>
+        <div class="blockwrap">
+          <div class="block" data-i="1"><span class="q">?</span><span class="coin">🪙</span></div>
+          <div class="blabel" data-l="1">方块 B</div>
+        </div>
+      </div>
+      <div class="hint" id="blockHint">由参与者点击其中一个方块 · 关卡内容随机</div>
+      <button class="btn" id="blockGo" style="display:none">进 入 关 卡</button>
+    </div>
+  </section>
+
+  <!-- 2A 经文 -->
+  <section class="screen" id="s-verse">
+    <div class="center">
+      <div class="tag" id="verseTag">背 诵 经 文</div>
+      <div class="timerbox">
+        <div class="timer" id="verseTimer">30<small>S</small></div>
+        <div class="bar"><i id="verseBar"></i></div>
+      </div>
+      <div class="verse" id="verseCard">
+        <div class="ref" id="verseRef"></div>
+        <div class="txt" id="verseTxt"></div>
+      </div>
+      <div class="hint" id="verseHint">请在时间内默记这节经文</div>
+      <div class="btnrow" id="verseCtl"><button class="btn ghost" id="verseSkip">我记好了 · 提前遮住</button></div>
+      <div class="btnrow" id="verseRecite" style="display:none"><button class="btn" id="verseReveal">显 示 答 案</button></div>
+      <div class="btnrow" id="verseJudge" style="display:none">
+        <button class="btn ok" data-v="1">✓ 背 对 了</button>
+        <button class="btn no" data-v="0">✗ 未 通 过</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2B 物品 -->
+  <section class="screen" id="s-table">
+    <div class="center" style="justify-content:flex-start">
+      <div class="tag" id="tableTag">观 察 桌 面</div>
+      <div class="timerbox">
+        <div class="timer" id="itemTimer">15<small>S</small></div>
+        <div class="bar"><i id="itemBar"></i></div>
+      </div>
+      <div class="tablewrap">
+        <div class="desk" id="desk"></div>
+        <div class="cloth" id="cloth">
+          <div class="ctxt">已 盖 上</div>
+          <div class="csub">TIME&apos;S UP</div>
+        </div>
+        <div class="distract" id="distract">
+          <div class="dlab">请 大 声 倒 着 念 出 来</div>
+          <div class="dnum" id="dnum">000</div>
+          <div class="dsub">例：4 7 2 → 念「二 七 四」</div>
+          <div class="dbar"><i id="dbar"></i></div>
+        </div>
+      </div>
+      <div class="hint" id="tableHint">15 秒内记住：有什么、什么颜色、放在哪个位置</div>
+      <div class="btnrow" id="tableCtl"><button class="btn ghost" id="coverNow">提 前 盖 布</button></div>
+      <div class="btnrow" id="toQ" style="display:none"><button class="btn" id="startQ">开 始 提 问</button></div>
+    </div>
+  </section>
+
+  <!-- 3 提问 -->
+  <section class="screen" id="s-quiz">
+    <div class="center" style="justify-content:flex-start;padding-top:4px">
+      <div class="dots" id="dots"></div>
+      <div class="qcard">
+        <div class="qnum" id="qnum">QUESTION 1</div>
+        <div class="qtext" id="qtext"></div>
+        <div class="opts" id="qopts"></div>
+        <div class="answer" id="qans">
+          <div class="alab">正 确 答 案</div>
+          <div class="atxt" id="qanstxt"></div>
+        </div>
+      </div>
+      <div class="btnrow" id="quizCtl"><button class="btn" id="revealBtn">显 示 答 案</button></div>
+      <div class="btnrow" id="judgeCtl" style="display:none">
+        <button class="btn ok" data-v="1">✓ 答 对</button>
+        <button class="btn no" data-v="0">✗ 答 错</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 结果 -->
+  <section class="screen" id="s-result">
+    <div class="center">
+      <div class="tag" id="rTag">挑 战 结 束</div>
+      <div class="scorecard">
+        <div class="bigscore" id="rScore">0<span class="tot"> / 0</span></div>
+        <div class="rmsg" id="rMsg"></div>
+        <div class="rsub" id="rSub"></div>
+      </div>
+      <div class="review" id="rReview"></div>
+      <div class="reviewdesk" id="rDeskWrap">
+        <div class="tablewrap"><div class="desk named" id="rDesk"></div></div>
+        <div class="hint">当时的桌面摆放（已标出名字）</div>
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" id="reviewDesk" style="display:none">回 看 桌 面</button>
+        <button class="btn" id="goStaff">返 回 工 作 人 员 页</button>
+        <button class="btn ghost" id="again">再 玩 一 次</button>
+      </div>
+      <div class="hint" id="autoHint"></div>
+    </div>
+  </section>
+
+  <footer class="foot">LIFE PASSPORT · MEMORY &amp; OBSERVATION</footer>
+</div>
+
+<script>
+"use strict";
+const STAFF_URL = "https://lifepassport.netlify.app/staff";
+
+/* ---------- 30 件随机物件 ---------- */
+const OBJECTS = [
+  {e:"📖",n:"圣经"},   {e:"🥤",n:"水杯"},   {e:"🍌",n:"香蕉"},   {e:"🔑",n:"钥匙"},
+  {e:"🪪",n:"学生卡"}, {e:"👓",n:"眼镜"},   {e:"📱",n:"手机"},   {e:"✂️",n:"剪刀"},
+  {e:"🍎",n:"苹果"},   {e:"☂️",n:"雨伞"},   {e:"✏️",n:"铅笔"},   {e:"⌚",n:"手表"},
+  {e:"🕯️",n:"蜡烛"},   {e:"🏀",n:"篮球"},   {e:"🦕",n:"恐龙"},   {e:"🛸",n:"飞碟"},
+  {e:"🤖",n:"机器人"}, {e:"👑",n:"皇冠"},   {e:"🎸",n:"吉他"},   {e:"🧸",n:"泰迪熊"},
+  {e:"🚀",n:"火箭"},   {e:"🌵",n:"仙人掌"}, {e:"🍩",n:"甜甜圈"}, {e:"🎲",n:"骰子"},
+  {e:"🔭",n:"望远镜"}, {e:"⏰",n:"闹钟"},   {e:"🔨",n:"锤子"},   {e:"🔍",n:"放大镜"},
+  {e:"🐧",n:"企鹅"},   {e:"🎩",n:"魔术帽"}
+];
+
+/* ---------- 物体颜色（上色在物体本身） ---------- */
+const COLORS = [
+  {n:"红色", c:"#e34b32"}, {n:"橙色", c:"#f2872b"}, {n:"黄色", c:"#f5c024"},
+  {n:"绿色", c:"#2f9e63"}, {n:"蓝色", c:"#3d8fd6"}, {n:"紫色", c:"#8b6bd9"},
+  {n:"粉色", c:"#ef7ba8"}, {n:"青色", c:"#25b5ab"}, {n:"棕色", c:"#a8703f"},
+  {n:"黑色", c:"#26211b"}
+];
+/* 容易吵架的颜色不在同一轮出现，问「什么颜色」才不会有争议 */
+const CLASH = [["橙色","棕色"],["橙色","黄色"],["红色","粉色"],["红色","橙色"],
+               ["青色","蓝色"],["青色","绿色"],["紫色","蓝色"],["棕色","黑色"]];
+function clash(a,b){ return CLASH.some(p=>(p[0]===a&&p[1]===b)||(p[1]===a&&p[0]===b)); }
+function palette(k){
+  const out = [];
+  for(const c of shuffle(COLORS)){
+    if(out.length >= k) break;
+    if(out.every(o => !clash(o.n, c.n))) out.push(c);
+  }
+  return out;
+}
+
+/* ---------- 经文库（和合本）· 按字数自动分短/中/长 ---------- */
+const VERSES = [
+  /* — 短 — */
+  {r:"诗篇 23:1", t:"耶和华是我的牧者，我必不致缺乏。"},
+  {r:"腓立比书 4:13", t:"我靠着那加给我力量的，凡事都能作。"},
+  {r:"诗篇 119:105", t:"你的话是我脚前的灯，是我路上的光。"},
+  {r:"约翰一书 4:19", t:"我们爱，因为神先爱我们。"},
+  {r:"约翰福音 15:5", t:"我是葡萄树，你们是枝子。"},
+  {r:"帖撒罗尼迦前书 5:16-18", t:"要常常喜乐，不住地祷告，凡事谢恩。"},
+  {r:"诗篇 121:2", t:"我的帮助从造天地的耶和华而来。"},
+  {r:"箴言 17:17", t:"朋友乃时常亲爱，弟兄为患难而生。"},
+  {r:"箴言 3:5", t:"你要专心仰赖耶和华，不可倚靠自己的聪明。"},
+  {r:"诗篇 27:1", t:"耶和华是我的亮光，是我的拯救，我还怕谁呢？"},
+  {r:"腓立比书 4:4", t:"你们要靠主常常喜乐。我再说，你们要喜乐。"},
+  {r:"诗篇 34:8", t:"你们要尝尝主恩的滋味，便知道他是美善。"},
+  {r:"诗篇 133:1", t:"看哪，弟兄和睦同居，是何等地善，何等地美！"},
+
+  /* — 中 — */
+  {r:"罗马书 8:28", t:"我们晓得万事都互相效力，叫爱神的人得益处。"},
+  {r:"彼得前书 5:7", t:"你们要将一切的忧虑卸给神，因为他顾念你们。"},
+  {r:"以弗所书 6:11", t:"要穿戴神所赐的全副军装，就能抵挡魔鬼的诡计。"},
+  {r:"哥林多前书 13:13", t:"如今常存的有信，有望，有爱这三样，其中最大的是爱。"},
+  {r:"诗篇 118:24", t:"这是耶和华所定的日子，我们在其中要高兴欢喜。"},
+  {r:"马太福音 6:33", t:"你们要先求他的国和他的义，这些东西都要加给你们了。"},
+  {r:"以赛亚书 41:10", t:"你不要害怕，因为我与你同在；不要惊惶，因为我是你的神。"},
+  {r:"马太福音 11:28", t:"凡劳苦担重担的人，可以到我这里来，我就使你们得安息。"},
+  {r:"哥林多前书 13:4", t:"爱是恒久忍耐，又有恩慈；爱是不嫉妒，爱是不自夸，不张狂。"},
+  {r:"加拉太书 5:22", t:"圣灵所结的果子，就是仁爱、喜乐、和平、忍耐、恩慈、良善、信实。"},
+  {r:"提摩太后书 1:7", t:"因为神赐给我们，不是胆怯的心，乃是刚强、仁爱、谨守的心。"},
+  {r:"箴言 4:23", t:"你要保守你心，胜过保守一切，因为一生的果效，是由心发出。"},
+  {r:"诗篇 46:1", t:"神是我们的避难所，是我们的力量，是我们在患难中随时的帮助。"},
+  {r:"约翰福音 14:6", t:"耶稣说：我就是道路、真理、生命；若不藉着我，没有人能到父那里去。"},
+  {r:"以弗所书 2:8", t:"你们得救是本乎恩，也因着信；这并不是出于自己，乃是神所赐的。"},
+  {r:"诗篇 139:14", t:"我要称谢你，因我受造，奇妙可畏；你的作为奇妙，这是我心深知道的。"},
+
+  /* — 长 — */
+  {r:"腓立比书 4:6", t:"应当一无挂虑，只要凡事藉着祷告、祈求和感谢，将你们所要的告诉神。"},
+  {r:"约翰福音 3:16", t:"神爱世人，甚至将他的独生子赐给他们，叫一切信他的，不至灭亡，反得永生。"},
+  {r:"加拉太书 2:20", t:"我已经与基督同钉十字架，现在活着的不再是我，乃是基督在我里面活着。"},
+  {r:"诗篇 23:4", t:"我虽然行过死荫的幽谷，也不怕遭害，因为你与我同在；你的杖，你的竿，都安慰我。"},
+  {r:"马太福音 5:16", t:"你们的光也当这样照在人前，叫他们看见你们的好行为，便将荣耀归给你们在天上的父。"},
+  {r:"约书亚记 1:9", t:"你当刚强壮胆，不要惧怕，也不要惊惶，因为你无论往哪里去，耶和华你的神必与你同在。"},
+  {r:"罗马书 12:2", t:"不要效法这个世界，只要心意更新而变化，叫你们察验何为神的善良、纯全、可喜悦的旨意。"},
+  {r:"以赛亚书 40:31", t:"但那等候耶和华的必从新得力。他们必如鹰展翅上腾，他们奔跑却不困倦，行走却不疲乏。"},
+  {r:"雅各书 1:2-3", t:"我的弟兄们，你们落在百般试炼中，都要以为大喜乐；因为知道你们的信心经过试验，就生忍耐。"},
+  {r:"耶利米书 29:11", t:"耶和华说：我知道我向你们所怀的意念，是赐平安的意念，不是降灾祸的意念，要叫你们末后有指望。"},
+  {r:"马太福音 28:19-20", t:"所以你们要去，使万民作我的门徒，奉父、子、圣灵的名给他们施洗；凡我所吩咐你们的，都教训他们遵守。"}
+];
+
+/* 只数汉字，不数标点 */
+function vlen(v){ return (v.t.match(/[\u4e00-\u9fa5]/g) || []).length; }
+/* 人数 → 经文档位：1 人短句、2 人中句、3 人长句 */
+const VERSE_SEC = 30;                     /* 记忆时间固定，人多只是经文更长 */
+const VERSE_TIER = {
+  1:{name:"短 句", max:19,  min:0,  tip:"一节短经文"},
+  2:{name:"中 句", max:29,  min:20, tip:"一节中等长度经文 · 两人可自行分工"},
+  3:{name:"长 句", max:999, min:30, tip:"一节长经文 · 三人可自行分工接力"}
+};
+function versePool(people){
+  const t = VERSE_TIER[people] || VERSE_TIER[2];
+  let pool = VERSES.filter(v => vlen(v) >= t.min && vlen(v) <= t.max);
+  if(pool.length < 3) pool = VERSES;      /* 兜底，正常不会走到 */
+  return pool;
+}
+
+/* ---------- 工具 ---------- */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const rnd = n => Math.floor(Math.random()*n);
+const rf = (a,b) => a + Math.random()*(b-a);
+const pick = a => a[rnd(a.length)];
+const shuffle = a => { const b=a.slice(); for(let i=b.length-1;i>0;i--){const j=rnd(i+1);[b[i],b[j]]=[b[j],b[i]];} return b; };
+function show(id){ $$(".screen").forEach(s=>s.classList.remove("active")); $("#"+id).classList.add("active"); window.scrollTo({top:0,behavior:"smooth"}); }
+function compact(on){ $("#topHead").classList.toggle("compact", !!on); }
+
+/* 取同色的亮/暗档，做受光渐变与描边 */
+function shade(hex, p){
+  const n = parseInt(hex.slice(1),16);
+  const mix = v => Math.max(0, Math.min(255, p>=0 ? v + (255-v)*p/100 : v * (100+p)/100));
+  return "#" + [n>>16, (n>>8)&255, n&255].map(v=>Math.round(mix(v)).toString(16).padStart(2,"0")).join("");
+}
+
+/* emoji → 用作 mask 的 SVG，把物体染成指定颜色 */
+function maskURL(emoji){
+  const svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>" +
+    "<text x='50' y='54' font-size='82' text-anchor='middle' dominant-baseline='central'>" + emoji + "</text></svg>";
+  return "url(\"data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg) + "\")";
+}
+if(!(CSS && CSS.supports && (CSS.supports("mask-image","url(a)") || CSS.supports("-webkit-mask-image","url(a)")))){
+  document.body.classList.add("nomask");
+}
+
+const S = { people:0, count:0, placed:[], unused:[],
+            mode:"", verse:null, tier:null, questions:[], qi:0, marks:[], timer:null, auto:null, dt:null };
+const CONFIG = { 1:{items:8, dup:1, q:3}, 2:{items:10, dup:1, q:4}, 3:{items:12, dup:2, q:5} };
+
+/* ================= 0 人数 ================= */
+$$("#people .pbtn").forEach(b=>b.addEventListener("click",()=>{
+  $$("#people .pbtn").forEach(x=>x.classList.remove("sel"));
+  b.classList.add("sel");
+  S.people = +b.dataset.n;
+  $("#toBlocks").disabled = false;
+}));
+$("#toBlocks").addEventListener("click",()=>{ setupBlocks(); show("s-blocks"); });
+
+/* ================= 1 问号方块 ================= */
+let blockRoles = [];
+function setupBlocks(){
+  blockRoles = shuffle(["verse","items"]);
+  $("#blocks").classList.remove("locked");
+  $$("#blocks .block").forEach(b=>{
+    b.className = "block";
+    b.querySelector(".q").textContent = "?";
+    b.querySelector(".coin").classList.remove("pop");
+  });
+  $$(".blabel").forEach((l,i)=>{ l.textContent = i===0?"方块 A":"方块 B"; l.className="blabel"; });
+  $("#blockHint").textContent = "由参与者点击其中一个方块 · 关卡内容随机";
+  $("#blockGo").style.display = "none";
+}
+$$("#blocks .block").forEach(b=>b.addEventListener("click",()=>{
+  if($("#blocks").classList.contains("locked")) return;
+  $("#blocks").classList.add("locked");
+  const i = +b.dataset.i, role = blockRoles[i], other = i===0?1:0;
+  b.classList.add("bump");
+  b.querySelector(".coin").classList.add("pop");
+  setTimeout(()=>{
+    b.classList.remove("bump"); b.classList.add("opened");
+    b.querySelector(".q").textContent = role==="verse" ? "📖" : "🔍";
+    $$(".blabel")[i].textContent = role==="verse" ? "背 诵 经 文" : "记 住 物 品";
+    $$(".blabel")[i].classList.add("hit");
+    const ob = $$("#blocks .block")[other];
+    ob.classList.add("dead");
+    ob.querySelector(".q").textContent = blockRoles[other]==="verse" ? "📖" : "🔍";
+    $$(".blabel")[other].textContent = "未 选 中";
+    $$(".blabel")[other].classList.add("off");
+    S.mode = role;
+    const vt = VERSE_TIER[S.people] || VERSE_TIER[2];
+    $("#blockHint").textContent = role==="verse"
+      ? "抽到「背诵经文」· " + vt.name.replace(/ /g,"") + " · " + VERSE_SEC + " 秒记忆时间"
+      : "抽到「记住物品」· 15 秒观察时间";
+    $("#blockGo").style.display = "";
+  },430);
+}));
+$("#blockGo").addEventListener("click",()=>{ S.mode==="verse" ? startVerse() : startTable(); });
+
+/* ================= 计时器 ================= */
+function runTimer(sec, elTime, elBar, onEnd){
+  clearInterval(S.timer);
+  let left = sec;
+  const paint = v => elTime.innerHTML = Math.max(v,0) + '<small>S</small>';
+  paint(left);
+  elTime.classList.remove("warn");
+  elBar.parentElement.classList.remove("warnbar");
+  elBar.style.transition = "none"; elBar.style.width = "100%";
+  requestAnimationFrame(()=>{ elBar.style.transition = "width "+sec+"s linear"; elBar.style.width = "0%"; });
+  S.timer = setInterval(()=>{
+    left--; paint(left);
+    if(left<=5){ elTime.classList.add("warn"); elBar.parentElement.classList.add("warnbar"); }
+    if(left<=0){ clearInterval(S.timer); onEnd(); }
+  },1000);
+}
+function stopTimer(elBar){
+  clearInterval(S.timer);
+  if(elBar){ const w = getComputedStyle(elBar).width; elBar.style.transition="none"; elBar.style.width=w; }
+}
+
+/* ================= 2A 经文关 ================= */
+function startVerse(){
+  const tier = VERSE_TIER[S.people] || VERSE_TIER[2];
+  S.tier = tier;
+  S.verse = pick(versePool(S.people));
+  $("#verseRef").textContent = S.verse.r;
+  $("#verseTxt").textContent = S.verse.t;
+  $("#verseCard").classList.remove("hidden-v");
+  $("#verseTag").textContent = "背 诵 经 文 · " + tier.name;
+  $("#verseTag").className = "tag";
+  $("#verseHint").textContent = tier.tip + " · 共 " + vlen(S.verse) + " 字，" + VERSE_SEC + " 秒记忆";
+  $("#verseCtl").style.display = "";
+  $("#verseRecite").style.display = "none";
+  $("#verseJudge").style.display = "none";
+  compact(false);
+  show("s-verse");
+  runTimer(VERSE_SEC, $("#verseTimer"), $("#verseBar"), hideVerse);
+}
+function hideVerse(){
+  stopTimer($("#verseBar"));
+  $("#verseCard").classList.add("hidden-v");
+  $("#verseTimer").innerHTML = '0<small>S</small>';
+  $("#verseTimer").classList.remove("warn");
+  $("#verseCtl").style.display = "none";
+  showRecite();
+}
+
+function showRecite(){
+  $("#verseTag").textContent = "请 开 始 背 诵";
+  $("#verseTag").className = "tag seal";
+  $("#verseHint").textContent = S.people >= 2
+    ? "全组一起背诵这一整段，谁背哪一句由你们自己商量，合起来完整即算通过"
+    : "参与者凭记忆背诵，工作人员核对";
+  $("#verseRecite").style.display = "";
+}
+$("#verseSkip").addEventListener("click", hideVerse);
+$("#verseReveal").addEventListener("click",()=>{
+  $("#verseCard").classList.remove("hidden-v");
+  $("#verseTag").textContent = "对 照 答 案";
+  $("#verseTag").className = "tag leaf";
+  $("#verseRecite").style.display = "none";
+  $("#verseJudge").style.display = "";
+});
+$$("#verseJudge .btn").forEach(b=>b.addEventListener("click",()=>{
+  S.marks = [b.dataset.v === "1"];
+  S.questions = [{q:"背诵经文 · " + S.verse.r + "（" + S.tier.name.replace(/ /g,"") + " " + vlen(S.verse) + " 字）", a:S.verse.t}];
+  finish();
+}));
+
+/* ================= 2B 物品关 · 不规则散放 ================= */
+function layout(count){
+  /* 随机撒点 + 最小间距，摆出真正不规则、又不会互相压住的桌面 */
+  const ar = (window.innerWidth <= 560) ? 1 : 0.75;   /* 桌面高/宽 */
+  const pts = [];
+  let D = 18;                                          /* 最小间距（宽度百分比） */
+  for(let i=0;i<count;i++){
+    let best = null, tries = 0;
+    while(tries++ < 500){
+      const x = rf(11,89), y = rf(13,86);
+      if(pts.every(p => Math.hypot(p.x-x, (p.y-y)*ar) >= D)){ best = {x,y}; break; }
+      if(tries % 90 === 0) D *= 0.92;                   /* 实在放不下就放宽一点 */
+    }
+    pts.push(best || {x:rf(11,89), y:rf(13,86)});
+  }
+  return pts.map(p=>({
+    x:p.x, y:p.y,
+    rot: rf(-20,20).toFixed(1) + "deg",
+    sc:  rf(0.9,1.12).toFixed(2)
+  }));
+}
+function renderDesk(host, named){
+  host.innerHTML = "";
+  host.classList.toggle("named", !!named);
+  S.placed.forEach((it,i)=>{
+    const el = document.createElement("div");
+    el.className = "obj";
+    el.style.cssText =
+      "left:"+it.x+"%;top:"+it.y+"%;--m:"+maskURL(it.e)+
+      ";--c:"+it.color.c+";--cl:"+shade(it.color.c,26)+";--cd:"+shade(it.color.c,-30)+
+      ";--rot:"+it.rot+";--sc:"+it.sc+
+      ";--sz:clamp(38px,11.5vw,78px);animation-delay:"+(named?0:i*55)+"ms";
+    el.innerHTML = '<span class="art"><span class="sil" data-e="'+it.e+'"></span></span>'+
+                   '<span class="emo">'+it.e+'</span><span class="nm">'+it.n+'</span>';
+    el.querySelector(".art").style.animationDelay = (named?0:i*55)+"ms";
+    host.appendChild(el);
+  });
+}
+
+function startTable(){
+  const cfg = CONFIG[S.people];
+  S.count = cfg.items;
+
+  /* 允许同一物品出现两次（不同颜色），逼参与者记"几个"而不只是"有什么" */
+  const dup = cfg.dup;
+  const base = shuffle(OBJECTS).slice(0, S.count - dup);
+  S.unused = OBJECTS.filter(o => base.indexOf(o) === -1);
+  const twins = shuffle(base).slice(0, dup);
+  const chosen = shuffle(base.concat(twins));
+
+  /* 只用 5–6 种颜色，让同色出现 2–3 次，"有几件是X色" 才有意义 */
+  const pal = palette(S.count <= 8 ? 5 : 6);
+  let bag = [];
+  while(bag.length < S.count) bag = bag.concat(shuffle(pal));
+  bag = shuffle(bag.slice(0, S.count));
+
+  const pos = layout(S.count);
+  S.placed = chosen.map((o,i)=>({
+    e:o.e, n:o.n, color: bag[i],
+    x: pos[i].x, y: pos[i].y, rot: pos[i].rot, sc: pos[i].sc
+  }));
+  /* 双胞胎的两件不要同色，否则无法区分 */
+  const seen = {};
+  S.placed.forEach(it=>{
+    if(seen[it.n] && seen[it.n].color.n === it.color.n){
+      const other = pal.find(c => c.n !== it.color.n);
+      if(other) it.color = other;
+    }
+    seen[it.n] = it;
+  });
+
+  renderDesk($("#desk"), false);
+
+  const c = $("#cloth");
+  c.classList.remove("drop");
+  c.style.transform = "translateY(-106%)";
+  $("#distract").classList.remove("on");
+  $("#tableTag").textContent = "观 察 桌 面";
+  $("#tableTag").className = "tag";
+  $("#tableHint").textContent = "15 秒内记住：有什么、什么颜色、放在哪里（没有名字提示）";
+  $("#tableCtl").style.display = "";
+  $("#toQ").style.display = "none";
+  compact(true);
+  show("s-table");
+  runTimer(15, $("#itemTimer"), $("#itemBar"), coverTable);
+}
+
+function coverTable(){
+  stopTimer($("#itemBar"));
+  $("#itemTimer").innerHTML = '0<small>S</small>';
+  $("#itemTimer").classList.remove("warn");
+  const c = $("#cloth");
+  c.style.transform = "";
+  c.classList.add("drop");
+  $("#tableTag").textContent = "桌 面 已 盖 上";
+  $("#tableTag").className = "tag seal";
+  $("#tableHint").textContent = "先做一个小干扰，再开始提问";
+  $("#tableCtl").style.display = "none";
+  setTimeout(distract, 1000);
+}
+
+/* 盖布后 3 秒干扰：念一串数字，冲掉嘴里还在默念的物品清单 */
+function distract(){
+  const d = $("#distract"), bar = $("#dbar");
+  $("#dnum").textContent = String(100 + rnd(900)).split("").join(" ");
+  d.classList.add("on");
+  bar.style.transition = "none"; bar.style.width = "100%";
+  requestAnimationFrame(()=>{ bar.style.transition = "width 3s linear"; bar.style.width = "0%"; });
+  $("#tableTag").textContent = "干 扰 · 3 秒";
+  clearTimeout(S.dt);
+  S.dt = setTimeout(()=>{
+    d.classList.remove("on");
+    $("#tableTag").textContent = "开 始 提 问";
+    $("#tableHint").textContent = "请参与者口头回答，工作人员判分";
+    $("#toQ").style.display = "";
+  }, 3000);
+}
+$("#coverNow").addEventListener("click", coverTable);
+$("#startQ").addEventListener("click",()=>{
+  S.questions = buildQuestions(CONFIG[S.people].q);
+  S.qi = 0; S.marks = [];
+  compact(true);
+  renderQ();
+  show("s-quiz");
+});
+
+/* ================= 出题（散放版：方位 / 颜色 / 相邻） ================= */
+function nm(it){ return it.e + " " + it.n; }
+
+function buildQuestions(n){
+  const P = S.placed;
+  const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
+  /* 名字重复的物件不能用来"指名道姓"提问，否则有歧义 */
+  const uniq = P.filter(it => P.filter(x=>x.n===it.n).length === 1);
+  const dupNames = [...new Set(P.filter(it => P.filter(x=>x.n===it.n).length > 1).map(x=>x.n))];
+  const corner = it => (it.y<50 ? (it.x<50?"左上":"右上") : (it.x<50?"左下":"右下"));
+  /* 桌上有同名物件时，答案要带颜色才不会有歧义（两个骰子 → 红色的那个） */
+  const nmA = it => nm(it) + (P.filter(x=>x.n===it.n).length>1 ? "（"+it.color.n+"）" : "");
+  const list = items => items.map(nmA).join("、");
+
+  const gens = [
+    /* — 颜色 — */
+    ()=>{ if(!uniq.length) return null; const it = pick(uniq);
+      return {q:"「"+nm(it)+"」是什么颜色的？", a:it.color.n, c:it.color.c}; },
+
+    ()=>{ const cand = COLORS.filter(c=>P.filter(x=>x.color.n===c.n).length===1);
+      if(!cand.length) return null;
+      const col = pick(cand), it = P.find(x=>x.color.n===col.n);
+      return {q:"桌上哪一件物品是"+col.n+"的？", a:nmA(it), c:col.c}; },
+
+    ()=>{ const cn = pick(P).color.n, k = P.filter(x=>x.color.n===cn).length;
+      return {q:"桌上有几件是"+cn+"的？", a:k+" 件"}; },
+
+    /* — 列举题：蒙不出来 — */
+    ()=>{ const cand = COLORS.filter(c=>P.filter(x=>x.color.n===c.n).length>=2);
+      if(!cand.length) return null;
+      const col = pick(cand), items = P.filter(x=>x.color.n===col.n);
+      return {q:"说出桌上所有"+col.n+"的物品（共 "+items.length+" 件）", a:list(items), c:col.c}; },
+
+    ()=>{ const side = Math.random()<.5;
+      const items = P.filter(x => side ? x.x<50 : x.x>=50);
+      if(items.length < 3) return null;
+      return {q:"说出桌面「"+(side?"左":"右")+"半边」的任意 3 件物品（那边共 "+items.length+" 件）",
+              a:list(items)}; },
+
+    /* — 组合题：两个都答对才算对 — */
+    ()=>{ const cand = COLORS.filter(c=>P.filter(x=>x.color.n===c.n).length===1);
+      if(!cand.length) return null;
+      const col = pick(cand), it = P.find(x=>x.color.n===col.n);
+      if(Math.abs(it.x-50)<12 || Math.abs(it.y-50)<12) return null;
+      return {q:col.n+"的那件是什么物品？它放在桌面的哪个角？（两个都要答对）",
+              a:nmA(it)+" · "+corner(it), c:col.c}; },
+
+    /* — 重复物件 — */
+    ()=>{ if(!dupNames.length) return null;
+      const name = pick(dupNames), items = P.filter(x=>x.n===name);
+      return {q:"桌上有几个「"+items[0].e+" "+name+"」？", a:items.length+" 个"}; },
+
+    ()=>{ if(!dupNames.length) return null;
+      const name = pick(dupNames), items = P.filter(x=>x.n===name);
+      return {q:"两个「"+items[0].e+" "+name+"」分别是什么颜色？",
+              a:items.map(x=>x.color.n).join(" 和 ")}; },
+
+    /* — 数量 / 有无 — */
+    ()=>({q:"桌上一共放了多少件物品？", a:S.count+" 件"}),
+
+    ()=>{ if(S.unused.length < 1) return null;
+      const absent = pick(S.unused), three = shuffle(uniq.length>=3?uniq:P).slice(0,3);
+      return {q:"下面哪一件物品「没有」出现在桌上？",
+              o:shuffle([absent,...three]).map(nm), a:nm(absent)}; },
+
+    /* — 方位 — */
+    ()=>{ const cand = uniq.filter(i=>Math.abs(i.x-50)>12 && Math.abs(i.y-50)>12);
+      if(!cand.length) return null;
+      const it = pick(cand);
+      return {q:"「"+nm(it)+"」放在桌面的哪个角？", o:["左上","右上","左下","右下"], a:corner(it)}; },
+
+    ()=>{ const s2 = P.slice().sort((a,b)=>a.x-b.x);
+      if(s2[1].x - s2[0].x < 5) return null;
+      return {q:"桌上最靠左边的是哪一件物品？", a:nmA(s2[0])}; },
+
+    ()=>{ const s2 = P.slice().sort((a,b)=>b.x-a.x);
+      if(s2[0].x - s2[1].x < 5) return null;
+      return {q:"桌上最靠右边的是哪一件物品？", a:nmA(s2[0])}; },
+
+    ()=>{ const s2 = P.slice().sort((a,b)=>a.y-b.y);
+      if(s2[1].y - s2[0].y < 5) return null;
+      return {q:"桌上最上面的是哪一件物品？", a:nmA(s2[0])}; },
+
+    ()=>{ const s2 = P.slice().sort((a,b)=>b.y-a.y);
+      if(s2[0].y - s2[1].y < 5) return null;
+      return {q:"桌上最下面的是哪一件物品？", a:nmA(s2[0])}; },
+
+    /* — 相邻 — */
+    ()=>{ if(!uniq.length) return null;
+      const it = pick(uniq);
+      const others = P.filter(x=>x!==it).sort((a,b)=>dist(it,a)-dist(it,b));
+      if(dist(it,others[0]) > dist(it,others[1]) * 0.72) return null;
+      return {q:"离「"+nm(it)+"」最近的一件物品是什么？", a:nmA(others[0])}; },
+
+    ()=>{ const k = P.filter(x=>x.x<50).length;
+      return {q:"桌面「左半边」放了几件物品？", a:k+" 件"}; }
+  ];
+
+  const out = [], used = new Set();
+  let t = 0;
+  while(out.length < n && t++ < 500){
+    const gi = rnd(gens.length);
+    if(used.has(gi) && used.size < gens.length) continue;
+    const q = gens[gi]();
+    used.add(gi);
+    if(!q || out.some(x=>x.q===q.q)) continue;
+    out.push(q);
+  }
+  return out;
+}
+
+/* ================= 3 提问 ================= */
+function ansHTML(q){
+  const chip = q.c ? '<span class="chip"><span class="dotc" style="background:'+q.c+'"></span></span>' : '';
+  return chip + '<span>' + esc(q.a) + '</span>';
+}
+function renderQ(){
+  const q = S.questions[S.qi];
+  $("#qnum").textContent = "QUESTION " + (S.qi+1) + " / " + S.questions.length;
+  $("#qtext").textContent = q.q;
+  const o = $("#qopts"); o.innerHTML = "";
+  if(q.o) q.o.forEach((x,i)=>{
+    const d = document.createElement("div"); d.className = "opt";
+    d.textContent = String.fromCharCode(65+i) + ". " + x; o.appendChild(d);
+  });
+  $("#qans").classList.remove("show");
+  $("#qanstxt").innerHTML = ansHTML(q);
+  $("#quizCtl").style.display = "";
+  $("#judgeCtl").style.display = "none";
+  const d = $("#dots"); d.innerHTML = "";
+  S.questions.forEach((_,i)=>{
+    const s = document.createElement("div"); s.className = "dot";
+    if(i < S.marks.length) s.classList.add(S.marks[i] ? "done" : "wrong");
+    else if(i === S.qi) s.classList.add("cur");
+    d.appendChild(s);
+  });
+}
+$("#revealBtn").addEventListener("click",()=>{
+  $("#qans").classList.add("show");
+  $("#quizCtl").style.display = "none";
+  $("#judgeCtl").style.display = "";
+});
+$$("#judgeCtl .btn").forEach(b=>b.addEventListener("click",()=>{
+  S.marks.push(b.dataset.v === "1");
+  S.qi++;
+  if(S.qi < S.questions.length) renderQ(); else finish();
+}));
+
+/* ================= 4 结果 ================= */
+function finish(){
+  const right = S.marks.filter(Boolean).length, total = S.marks.length;
+  const need = Math.ceil(total * 0.6);
+  const pass = right >= need;
+  $("#rScore").innerHTML = right + '<span class="tot"> / ' + total + '</span>';
+  $("#rTag").textContent = S.mode === "verse" ? "经 文 关 结 束" : "观 察 关 结 束";
+  $("#rTag").className = "tag " + (pass ? "leaf" : "seal");
+  $("#rMsg").textContent = pass ? "通 关 成 功 🎉" : "未 达 标 · 再 接 再 厉";
+  $("#rSub").textContent = pass
+    ? "请工作人员回到后台，为本组盖上「记忆与观察站」的章。"
+    : "本关需答对 " + need + " 题，请回后台如实记录成绩。";
+  const r = $("#rReview"); r.innerHTML = "";
+  S.questions.forEach((q,i)=>{
+    const row = document.createElement("div"); row.className = "rrow";
+    row.innerHTML = '<span class="mk">'+(S.marks[i]?"✅":"❌")+'</span><span>'+
+      esc(q.q)+'<br><b>答案：</b><span class="ans">'+esc(q.a)+'</span></span>';
+    r.appendChild(row);
+  });
+  const rb = $("#reviewDesk");
+  $("#rDeskWrap").classList.remove("on");
+  if(S.mode === "items"){
+    rb.style.display = "";
+    rb.textContent = "回 看 桌 面";
+  } else rb.style.display = "none";
+  compact(false);
+  show("s-result");
+  clearInterval(S.auto);
+  let left = 20;
+  const tick = () => $("#autoHint").textContent = left + " 秒后自动返回工作人员页面";
+  tick();
+  S.auto = setInterval(()=>{ left--; tick(); if(left<=0){ clearInterval(S.auto); location.href = STAFF_URL; } },1000);
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+$("#reviewDesk").addEventListener("click",()=>{
+  const w = $("#rDeskWrap"), on = w.classList.toggle("on");
+  $("#reviewDesk").textContent = on ? "收 起 桌 面" : "回 看 桌 面";
+  if(on){ renderDesk($("#rDesk"), true); w.scrollIntoView({behavior:"smooth", block:"center"}); }
+  clearInterval(S.auto);                       /* 看回放时别自动跳走 */
+  $("#autoHint").textContent = "看完请手动返回工作人员页面";
+});
+$("#goStaff").addEventListener("click",()=>{ clearInterval(S.auto); location.href = STAFF_URL; });
+$("#again").addEventListener("click",()=>{
+  clearInterval(S.auto); clearInterval(S.timer); clearTimeout(S.dt);
+  S.marks=[]; S.questions=[]; S.qi=0; S.mode="";
+  $$("#people .pbtn").forEach(x=>x.classList.remove("sel"));
+  $("#toBlocks").disabled = true;
+  compact(false);
+  show("s-start");
+});
+</script>
+</body>
+</html>
