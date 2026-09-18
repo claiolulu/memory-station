@@ -419,7 +419,7 @@ footer.foot{text-align:center;color:#c3b79f;font-size:10.5px;margin-top:26px;let
           <div class="dbar"><i id="dbar"></i></div>
         </div>
       </div>
-      <div class="hint" id="tableHint">15 秒内记住：有什么、什么颜色、放在哪个位置</div>
+      <div class="hint" id="tableHint">20 秒内记住：有什么、什么颜色、放在哪个位置</div>
       <div class="btnrow" id="tableCtl"><button class="btn ghost" id="coverNow">提 前 盖 布</button></div>
       <div class="btnrow" id="toQ" style="display:none"><button class="btn" id="startQ">开 始 提 问</button></div>
     </div>
@@ -577,7 +577,8 @@ function vlen(v){ return (v.t.match(/[一-龥]/g) || []).length; }
 /* 难度标签：按中文字数 */
 function vlevel(v){ const n = vlen(v); return n <= 18 ? "短 句" : n <= 26 ? "中 句" : "长 句"; }
 
-const VERSE_SEC = 30;                     /* 记忆时间固定 */
+const VERSE_SEC = 20;                     /* 记忆时间固定 */
+const ITEM_SEC  = 20;                     /* 观察桌面的时间，和经文一样长 */
 const GROUP_TIP = { 1:"", 2:" · 两人可自行分工", 3:" · 三人可自行分工接力" };
 
 /* 按人数给每节经文一个权重：所有经文都可能出现，
@@ -672,7 +673,7 @@ $$("#blocks .block").forEach(b=>b.addEventListener("click",()=>{
     S.mode = role;
     $("#blockHint").textContent = role==="verse"
       ? "抽到「背诵经文」· " + VERSE_SEC + " 秒记忆时间"
-      : "抽到「记住物品」· 15 秒观察时间";
+      : "抽到「记住物品」· " + ITEM_SEC + " 秒观察时间";
     $("#blockGo").style.display = "";
   },430);
 }));
@@ -902,12 +903,12 @@ function startTable(){
   $("#distract").classList.remove("on");
   $("#tableTag").textContent = "观 察 桌 面";
   $("#tableTag").className = "tag";
-  $("#tableHint").textContent = "15 秒内记住：有什么、什么颜色、放在哪里（没有名字提示）";
+  $("#tableHint").textContent = ITEM_SEC + " 秒内记住：有什么、什么颜色、放在哪里（没有名字提示）";
   $("#tableCtl").style.display = "";
   $("#toQ").style.display = "none";
   compact(true);
   show("s-table");
-  readyThen("准备观察桌面",()=>runTimer(15, $("#itemTimer"), $("#itemBar"), coverTable));
+  readyThen("准备观察桌面",()=>runTimer(ITEM_SEC, $("#itemTimer"), $("#itemBar"), coverTable));
 }
 
 function coverTable(){
@@ -1003,11 +1004,10 @@ function buildQuestions(n){
       const col = pick(cand), items = P.filter(x=>x.color.n===col.n);
       return {q:"说出桌上所有"+col.n+"的物品（共 "+items.length+" 件）", a:list(items), c:col.c}; },
 
-    ()=>{ const side = Math.random()<.5;
-      const items = P.filter(x => side ? x.x<50 : x.x>=50);
-      if(items.length < 3) return null;
-      return {q:"说出桌面「"+(side?"左":"右")+"半边」的任意 3 件物品（那边共 "+items.length+" 件）",
-              a:list(items)}; },
+    ()=>{ if(uniq.length < 2) return null;
+      const [a,b] = shuffle(uniq).slice(0,2);
+      return {q:"「"+nm(a)+"」和「"+nm(b)+"」分别是什么颜色？（两个都要答对）",
+              a:a.color.n+" 和 "+b.color.n}; },
 
     /* — 组合题：两个都答对才算对 — */
     ()=>{ const cand = COLORS.filter(c=>P.filter(x=>x.color.n===c.n).length===1);
@@ -1064,8 +1064,8 @@ function buildQuestions(n){
       if(dist(it,others[0]) > dist(it,others[1]) * 0.72) return null;
       return {q:"离「"+nm(it)+"」最近的一件物品是什么？", a:nmA(others[0])}; },
 
-    ()=>{ const k = P.filter(x=>x.x<50).length;
-      return {q:"桌面「左半边」放了几件物品？", a:k+" 件"}; }
+    ()=>{ const k = new Set(P.map(x=>x.color.n)).size;
+      return {q:"桌上一共出现了几种颜色？", a:k+" 种"}; }
   ];
 
   const groups = [
