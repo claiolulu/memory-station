@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#fff9f0">
 <meta name="apple-mobile-web-app-title" content="记忆观察站">
 <title>记忆与观察站 · 人生护照</title>
 <style>
@@ -19,7 +20,7 @@
   --pop:cubic-bezier(.34,1.56,.64,1);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;background:var(--night)}
 body{
   margin:0;min-height:100dvh;background:var(--night);color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei","Helvetica Neue",sans-serif;
@@ -31,7 +32,9 @@ body{
 .blob.b3{width:min(16vw,120px);aspect-ratio:1;right:6vw;bottom:8vh;opacity:.28}
 
 .wrap{position:relative;z-index:1;flex:1;width:100%;max-width:940px;margin:0 auto;
-  padding:18px 20px 44px;display:flex;flex-direction:column}
+  padding:18px 20px 44px;display:flex;flex-direction:column;
+  padding-top:max(18px, env(safe-area-inset-top));
+  padding-left:max(20px, env(safe-area-inset-left));padding-right:max(20px, env(safe-area-inset-right))}
 
 header.top{text-align:center;margin:22px 0 20px;transition:.35s var(--ease)}
 header.top.compact{margin:10px 0 14px}
@@ -237,7 +240,20 @@ body.nomask .obj .emo{display:block;background:var(--c);border-radius:50%;paddin
 .dot.wrong{background:var(--seal)}
 .dot.cur{background:var(--ink);transform:scale(1.25)}
 .quiz-status{font-size:12px;color:var(--ink-dim);font-weight:700}
-.ready{position:fixed;inset:0;z-index:20;background:var(--ink);color:var(--night);
+/* 恩典卡确认框：跟页面同一套样式，不用浏览器原生弹窗 */
+html.dark-chrome,html.dark-chrome body{background:var(--ink)}
+.dialog{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;
+  padding:20px;background:rgba(38,33,27,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.dialog.on{display:flex;animation:fade .2s var(--ease) both}
+.dlg-card{background:var(--card);border:2px solid var(--foil);border-radius:24px;padding:28px 28px 24px;
+  max-width:440px;width:100%;text-align:center;box-shadow:0 22px 54px rgba(38,33,27,.3)}
+.dlg-icon{font-size:42px;line-height:1}
+.dlg-title{font-size:23px;font-weight:900;margin:10px 0 8px}
+.dlg-msg{font-size:15.5px;line-height:1.7;color:var(--ink)}
+.dlg-note{display:inline-block;margin:14px 0 20px;font-size:12.5px;font-weight:800;color:var(--foil-dim);
+  background:rgba(255,200,56,.2);border-radius:999px;padding:6px 14px}
+
+.ready{position:fixed;inset:-60px;z-index:20;padding:80px 20px!important;background:var(--ink);color:var(--night);
   display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;padding:20px}
 .ready.on{display:flex}
 .ready .ready-label{font-size:15px;letter-spacing:.2em;color:var(--foil);font-weight:800}
@@ -267,7 +283,8 @@ footer.foot{text-align:center;color:#c3b79f;font-size:10.5px;margin-top:26px;let
 @media(orientation:portrait) and (min-width:700px){ #s-result .review{max-height:34vh;overflow:auto} }
 /* ===== iPad 横屏：每一页都尽量一屏装下，不用上下滑 ===== */
 @media (orientation:landscape) and (min-width:900px){
-  .wrap{max-width:1120px;padding:12px 28px 12px}
+  .wrap{max-width:1120px;padding:12px 28px 12px;padding-top:max(12px, env(safe-area-inset-top));
+    padding-left:max(28px, env(safe-area-inset-left));padding-right:max(28px, env(safe-area-inset-right))}
   footer.foot{display:none}
   header.top{margin:4px 0 14px}
   /* 除了首页，标题统一收成一行小字 */
@@ -452,6 +469,15 @@ footer.foot{text-align:center;color:#c3b79f;font-size:10.5px;margin-top:26px;let
   </section>
 
   <footer class="foot">LIFE PASSPORT · MEMORY &amp; OBSERVATION</footer>
+</div>
+<div class="dialog" id="graceDlg" role="dialog" aria-modal="true" aria-labelledby="graceTitle">
+  <div class="dlg-card">
+    <div class="dlg-icon">🎁</div>
+    <div class="dlg-title" id="graceTitle">使用恩典卡？</div>
+    <div class="dlg-msg" id="graceMsg"></div>
+    <div class="dlg-note">每局只能用一次 · 使用后本局最高 6 分</div>
+    <div class="btnrow"><button class="btn ghost" id="graceNo">取 消</button><button class="btn grace" id="graceYes">🎁 使 用</button></div>
+  </div>
 </div>
 <div class="ready" id="ready" role="status" aria-live="assertive">
   <div class="ready-label">准备开始观察</div>
@@ -665,17 +691,37 @@ function stopTimer(elBar){
   clearInterval(S.timer);
   if(elBar){ const w = getComputedStyle(elBar).width; elBar.style.transition="none"; elBar.style.width=w; }
 }
+function askGrace(msg){
+  return new Promise(res=>{
+    const d = $("#graceDlg");
+    $("#graceMsg").textContent = msg;
+    d.classList.add("on");
+    const done = v => { d.classList.remove("on"); $("#graceYes").onclick = $("#graceNo").onclick = d.onclick = null; res(v); };
+    $("#graceYes").onclick = () => done(true);
+    $("#graceNo").onclick  = () => done(false);
+    d.onclick = e => { if(e.target === d) done(false); };
+  });
+}
+
+/* 倒数时把页面底色、状态栏颜色也换成黑，iPad 边缘和状态栏就不会露出白边 */
+function darkChrome(on){
+  document.documentElement.classList.toggle("dark-chrome", on);
+  const m = document.querySelector('meta[name="theme-color"]');
+  if(m) m.content = on ? "#26211b" : "#fff9f0";
+}
 function readyThen(label, begin){
   clearInterval(S.ready);
   $("#ready .ready-label").textContent = label;
   $("#readyNum").textContent = "3";
   $("#ready").classList.add("on");
+  darkChrome(true);
   let left = 3;
   S.ready = setInterval(()=>{
     left--;
     if(left > 0){ $("#readyNum").textContent = left; return; }
     clearInterval(S.ready);
     $("#ready").classList.remove("on");
+    darkChrome(false);
     begin();
   },1000);
 }
@@ -730,8 +776,8 @@ function verseClueHTML(text){
            (seg.length > show ? '<span class="b">'+esc(seg.slice(show))+'</span>' : "");
   }).join("");
 }
-$("#verseGrace").addEventListener("click",()=>{
-  if(S.graceUsed || !confirm("使用本局唯一一张恩典卡？将显示模糊的经文，只露出每句开头的几个字，最高得 6 分。")) return;
+$("#verseGrace").addEventListener("click",async ()=>{
+  if(S.graceUsed || !(await askGrace("遮住的经文会原地显示出来，但整句是模糊的，只露出每句开头的几个字。"))) return;
   S.graceUsed = true;
   $("#verseTxt").innerHTML = verseClueHTML(S.verse.t);
   $("#verseCard").classList.remove("hidden-v");
@@ -882,8 +928,8 @@ $("#startQ").addEventListener("click",()=>{
   renderQ();
   show("s-quiz");
 });
-$("#itemGrace").addEventListener("click",()=>{
-  if(S.graceUsed || !confirm("使用本局唯一一张恩典卡？可再看桌面 6 秒，最高得 6 分。")) return;
+$("#itemGrace").addEventListener("click",async ()=>{
+  if(S.graceUsed || !(await askGrace("掀开红布，再看一次原来的桌面 6 秒，然后继续答题。"))) return;
   S.graceUsed = true;
   $("#itemGrace").style.display = "none";
   $("#toQ").style.display = "none";
@@ -1123,7 +1169,7 @@ $("#closeDesk").addEventListener("click",()=>$("#rDeskWrap").classList.remove("o
 $("#rDeskWrap").addEventListener("click",e=>{ if(e.target.id==="rDeskWrap") $("#rDeskWrap").classList.remove("on"); });
 $("#again").addEventListener("click",()=>{
   clearInterval(S.timer); clearInterval(S.ready); clearTimeout(S.dt);
-  $("#ready").classList.remove("on");
+  $("#ready").classList.remove("on"); darkChrome(false);
   S.marks=[]; S.questions=[]; S.qi=0; S.mode=""; S.versePoints=null;
   S.graceUsed=false;
   $("#verseCard").classList.remove("clued");
