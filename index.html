@@ -197,6 +197,9 @@ body.nomask .obj .emo{display:block;background:var(--c);border-radius:50%;paddin
 .verse .ref{font-size:12px;font-weight:800;letter-spacing:.2em;color:var(--foil-dim);margin-bottom:14px}
 .verse .txt{font-size:clamp(17px,4.4vw,23px);line-height:1.95;font-weight:600}
 .verse.hidden-v{filter:blur(16px);opacity:.28;user-select:none}
+.grace-clue{display:none;background:var(--card);border:2px solid var(--foil);border-radius:16px;
+  padding:12px 20px;color:var(--ink);font-size:18px;font-weight:800;text-align:center}
+.grace-clue.on{display:block}
 
 /* 问答 */
 .qcard{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:28px 22px;
@@ -306,9 +309,10 @@ footer.foot{text-align:center;color:#c3b79f;font-size:10.5px;margin-top:26px;let
         <div class="ref" id="verseRef"></div>
         <div class="txt" id="verseTxt"></div>
       </div>
+      <div class="grace-clue" id="verseClue" aria-live="polite"></div>
       <div class="hint" id="verseHint">请在时间内默记这节经文</div>
       <div class="btnrow" id="verseCtl"><button class="btn ghost" id="verseSkip">我记好了 · 提前遮住</button></div>
-      <div class="btnrow" id="verseRecite" style="display:none"><button class="btn" id="verseReveal">显 示 答 案</button></div>
+      <div class="btnrow" id="verseRecite" style="display:none"><button class="btn ghost" id="verseGrace">🎁 使用恩典卡 · 关键词提示</button><button class="btn" id="verseReveal">显 示 答 案</button></div>
       <div class="btnrow" id="verseJudge" style="display:none">
         <button class="btn ok" data-score="9">9 分 · 完整准确</button>
         <button class="btn" data-score="6">6 分 · 小错自纠</button>
@@ -359,7 +363,7 @@ footer.foot{text-align:center;color:#c3b79f;font-size:10.5px;margin-top:26px;let
           <div class="atxt" id="qanstxt"></div>
         </div>
       </div>
-      <div class="btnrow" id="quizCtl"><button class="btn" id="revealBtn">显 示 答 案</button></div>
+      <div class="btnrow" id="quizCtl"><button class="btn ghost" id="itemGrace">🎁 使用恩典卡 · 再看 6 秒</button><button class="btn" id="revealBtn">显 示 答 案</button></div>
       <div class="btnrow" id="judgeCtl" style="display:none">
         <button class="btn ok" data-v="1">✓ 答 对</button>
         <button class="btn no" data-v="0">✗ 答 错</button>
@@ -530,7 +534,7 @@ if(!(CSS && CSS.supports && (CSS.supports("mask-image","url(a)") || CSS.supports
   document.body.classList.add("nomask");
 }
 
-const S = { people:0, count:0, placed:[], unused:[],
+const S = { people:0, count:0, placed:[], unused:[], graceUsed:false,
             mode:"", verse:null, tier:null, questions:[], qi:0, marks:[], timer:null, dt:null,
             ready:null, versePoints:null };
 const CONFIG = { 1:{items:8, dup:1, q:3}, 2:{items:10, dup:1, q:4}, 3:{items:12, dup:2, q:5} };
@@ -624,6 +628,8 @@ function startVerse(){
   const tier = VERSE_TIER[S.people] || VERSE_TIER[2];
   S.tier = tier;
   S.verse = pick(versePool(S.people));
+  S.graceUsed = false;
+  $("#verseClue").classList.remove("on");
   $("#verseRef").textContent = S.verse.r;
   $("#verseTxt").textContent = S.verse.t;
   $("#verseCard").classList.remove("hidden-v");
@@ -653,7 +659,19 @@ function showRecite(){
     ? "全组一起背诵这一整段，谁背哪一句由你们自己商量，合起来完整即算通过"
     : "参与者凭记忆背诵，工作人员核对";
   $("#verseRecite").style.display = "";
+  $("#verseGrace").style.display = S.graceUsed ? "none" : "";
 }
+function verseKeyword(text){
+  const parts = text.split(/[，。；！？、]/).map(x=>x.match(/[\u4e00-\u9fa5]/g)?.join("") || "").filter(x=>x.length>=4);
+  return (parts[Math.floor(parts.length/2)] || text).slice(0,4);
+}
+$("#verseGrace").addEventListener("click",()=>{
+  if(S.graceUsed || !confirm("使用本局唯一一张恩典卡？将显示一个经文关键词，最高得 6 分。")) return;
+  S.graceUsed = true;
+  $("#verseClue").textContent = "🎁 关键词提示：" + verseKeyword(S.verse.t);
+  $("#verseClue").classList.add("on");
+  $("#verseGrace").style.display = "none";
+});
 $("#verseSkip").addEventListener("click", hideVerse);
 $("#verseReveal").addEventListener("click",()=>{
   $("#verseCard").classList.remove("hidden-v");
@@ -663,7 +681,7 @@ $("#verseReveal").addEventListener("click",()=>{
   $("#verseJudge").style.display = "";
 });
 $$("#verseJudge .btn").forEach(b=>b.addEventListener("click",()=>{
-  S.versePoints = Number(b.dataset.score);
+  S.versePoints = Math.min(Number(b.dataset.score), S.graceUsed ? 6 : 9);
   S.marks = [S.versePoints > 0];
   S.questions = [{q:"背诵经文 · " + S.verse.r + "（" + S.tier.name.replace(/ /g,"") + " " + vlen(S.verse) + " 字）", a:S.verse.t}];
   finish();
@@ -709,6 +727,7 @@ function renderDesk(host, named){
 }
 
 function startTable(){
+  S.graceUsed = false;
   const cfg = CONFIG[S.people];
   S.count = cfg.items;
 
@@ -788,11 +807,32 @@ function distract(){
 }
 $("#coverNow").addEventListener("click", coverTable);
 $("#startQ").addEventListener("click",()=>{
+  $("#toQ").style.display = "none";
   S.questions = buildQuestions(CONFIG[S.people].q);
   S.qi = 0; S.marks = [];
   compact(true);
   renderQ();
   show("s-quiz");
+});
+$("#itemGrace").addEventListener("click",()=>{
+  if(S.graceUsed || !confirm("使用本局唯一一张恩典卡？可再看桌面 6 秒，最高得 6 分。")) return;
+  S.graceUsed = true;
+  $("#itemGrace").style.display = "none";
+  $("#toQ").style.display = "none";
+  $("#cloth").classList.remove("drop");
+  $("#cloth").style.transform = "translateY(-106%)";
+  $("#tableTag").textContent = "恩 典 卡 · 再 看 6 秒";
+  $("#tableTag").className = "tag leaf";
+  $("#tableHint").textContent = "观察原来的物品与位置 · 6 秒后自动盖上";
+  show("s-table");
+  runTimer(6, $("#itemTimer"), $("#itemBar"),()=>{
+    $("#cloth").style.transform = "";
+    $("#cloth").classList.add("drop");
+    $("#tableTag").textContent = "继 续 提 问";
+    $("#tableTag").className = "tag seal";
+    $("#tableHint").textContent = "恩典卡已使用，可以继续回答当前问题";
+    show("s-quiz");
+  });
 });
 
 /* ================= 出题（散放版：方位 / 颜色 / 相邻） ================= */
@@ -934,6 +974,7 @@ function renderQ(){
   $("#qans").classList.remove("show");
   $("#qanstxt").innerHTML = ansHTML(q);
   $("#quizCtl").style.display = "";
+  $("#itemGrace").style.display = S.graceUsed ? "none" : "";
   $("#judgeCtl").style.display = "none";
   $("#undoJudge").style.display = S.qi>0 ? "" : "none";
   const d = $("#dots"); d.innerHTML = "";
@@ -967,8 +1008,9 @@ $("#undoJudge").addEventListener("click",()=>editQuestion(S.qi-1));
 function finish(){
   const right = S.marks.filter(Boolean).length, total = S.marks.length;
   const need = Math.ceil(total * 0.6);
-  const points = S.mode === "verse" ? S.versePoints :
+  const rawPoints = S.mode === "verse" ? S.versePoints :
     right === total ? 9 : right >= need ? 6 : right > 0 ? 3 : 0;
+  const points = Math.min(rawPoints, S.graceUsed ? 6 : 9);
   const pass = points >= 6;
   $("#rScore").innerHTML = right + '<span class="tot"> / ' + total + '</span>';
   $("#rTag").textContent = S.mode === "verse" ? "经 文 关 结 束" : "观 察 关 结 束";
@@ -978,7 +1020,8 @@ function finish(){
   $("#scoreGuide").innerHTML = '<strong>'+points+' 分</strong> · 建议录入分数<br>' +
     (S.mode === "verse"
       ? "9 分完整准确 · 6 分少量错误且自行纠正 · 3 分提示后完成 · 0 分未完成"
-      : "9 分全对 · 6 分答对至少 " + need + " 题 · 3 分答对 1～" + (need-1) + " 题 · 0 分全错");
+      : "9 分全对 · 6 分答对至少 " + need + " 题 · 3 分答对 1～" + (need-1) + " 题 · 0 分全错") +
+    (S.graceUsed ? "<br>🎁 已使用恩典卡，本局最高 6 分" : "");
   const r = $("#rReview"); r.innerHTML = "";
   S.questions.forEach((q,i)=>{
     const row = document.createElement("div"); row.className = "rrow";
@@ -1012,6 +1055,8 @@ $("#again").addEventListener("click",()=>{
   clearInterval(S.timer); clearInterval(S.ready); clearTimeout(S.dt);
   $("#ready").classList.remove("on");
   S.marks=[]; S.questions=[]; S.qi=0; S.mode=""; S.versePoints=null;
+  S.graceUsed=false;
+  $("#verseClue").classList.remove("on");
   $$("#people .pbtn").forEach(x=>x.classList.remove("sel"));
   $("#toBlocks").disabled = true;
   compact(false);
