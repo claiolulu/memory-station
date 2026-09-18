@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="记忆观察站">
 <title>记忆与观察站 · 人生护照</title>
 <style>
 :root{
@@ -75,6 +79,8 @@ h1{margin:9px 0 6px;font-size:clamp(28px,7vw,44px);font-weight:900;letter-spacin
 .btn:active{transform:translateY(1px)}
 .btn.ghost{background:var(--raise);color:var(--ink);box-shadow:none}
 .btn.ghost:hover{background:#e9dcc2}
+.btn.grace{background:var(--foil);color:var(--ink);border:2px solid var(--ink);
+  box-shadow:0 5px 0 var(--ink),0 9px 18px rgba(38,33,27,.16)}
 .btn.ok{background:var(--leaf);color:#fff;box-shadow:0 6px 18px rgba(47,158,99,.3)}
 .btn.no{background:var(--seal);color:#fff;box-shadow:0 6px 18px rgba(196,64,42,.28)}
 .btn[disabled]{opacity:.32;pointer-events:none;box-shadow:none}
@@ -174,9 +180,12 @@ body.nomask .obj .emo{display:block;background:var(--c);border-radius:50%;paddin
 .distract .dbar{height:6px;width:min(240px,60%);border-radius:999px;background:rgba(255,249,240,.2);overflow:hidden}
 .distract .dbar i{display:block;height:100%;background:var(--foil);width:100%}
 
-/* 结果页回看 */
-.reviewdesk{width:100%;max-width:640px;display:none;flex-direction:column;gap:10px;align-items:center}
-.reviewdesk.on{display:flex}
+/* 结果页回看：弹窗，不把页面撑长 */
+.reviewdesk{position:fixed;inset:0;z-index:30;overflow:hidden;display:none;flex-direction:column;gap:14px;
+  align-items:center;justify-content:center;padding:20px;background:rgba(38,33,27,.62);backdrop-filter:blur(4px)}
+.reviewdesk.on{display:flex;animation:fade .25s var(--ease) both}
+.reviewdesk .tablewrap{width:min(94vw, calc((100vh - 200px) * 4 / 3));width:min(94vw, calc((100dvh - 200px) * 4 / 3));max-width:none;aspect-ratio:4/3;flex:0 0 auto}
+.reviewdesk .hint{color:rgba(255,249,240,.8)}
 
 .cloth{position:absolute;inset:0;z-index:5;transform:translateY(-106%);
   background:repeating-linear-gradient(45deg,rgba(0,0,0,.07) 0 13px,transparent 13px 26px),
@@ -197,9 +206,14 @@ body.nomask .obj .emo{display:block;background:var(--c);border-radius:50%;paddin
 .verse .ref{font-size:12px;font-weight:800;letter-spacing:.2em;color:var(--foil-dim);margin-bottom:14px}
 .verse .txt{font-size:clamp(17px,4.4vw,23px);line-height:1.95;font-weight:600}
 .verse.hidden-v{filter:blur(16px);opacity:.28;user-select:none}
-.grace-clue{display:none;background:var(--card);border:2px solid var(--foil);border-radius:16px;
-  padding:12px 20px;color:var(--ink);font-size:18px;font-weight:800;text-align:center}
-.grace-clue.on{display:block}
+.verse .badge{display:none;position:absolute;top:12px;right:14px;background:var(--foil);color:var(--ink);
+  font-size:11px;font-weight:800;letter-spacing:.14em;border-radius:999px;padding:4px 11px}
+/* 恩典卡：就在原文卡上变 —— 整句模糊，只露出每个分句开头的一两个字 */
+.verse.clued{border:2px solid var(--foil);box-shadow:0 14px 36px rgba(255,200,56,.28)}
+.verse.clued .badge{display:block}
+.verse .b{filter:blur(6px);opacity:.5;user-select:none}
+.verse .k{background:rgba(255,200,56,.38);border-radius:5px;padding:0 2px;font-weight:900;white-space:nowrap}
+.verse .p{color:var(--ink-dim)}
 
 /* 问答 */
 .qcard{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:28px 22px;
@@ -249,9 +263,49 @@ body.nomask .obj .emo{display:block;background:var(--c);border-radius:50%;paddin
 .rrow .ans{color:var(--foil-dim)}
 footer.foot{text-align:center;color:#c3b79f;font-size:10.5px;margin-top:26px;letter-spacing:.24em;font-weight:700}
 @media(max-width:420px){ .btn{padding:14px 24px;font-size:14px} }
+@media(min-width:700px){ .wrap{padding-bottom:18px} footer.foot{margin-top:12px} }
+@media(orientation:portrait) and (min-width:700px){ #s-result .review{max-height:34vh;overflow:auto} }
+/* ===== iPad 横屏：每一页都尽量一屏装下，不用上下滑 ===== */
+@media (orientation:landscape) and (min-width:900px){
+  .wrap{max-width:1120px;padding:12px 28px 12px}
+  footer.foot{display:none}
+  header.top{margin:4px 0 14px}
+  /* 除了首页，标题统一收成一行小字 */
+  body:not([data-screen="s-start"]) header.top{margin:0 0 8px}
+  body:not([data-screen="s-start"]) header.top .logo,
+  body:not([data-screen="s-start"]) header.top .sub,
+  body:not([data-screen="s-start"]) header.top .kicker{display:none}
+  body:not([data-screen="s-start"]) header.top h1{font-size:22px;margin:0}
+  .center{gap:12px}
+  .timerbox{gap:8px}
+  .timer{font-size:52px;font-size:clamp(40px,7dvh,60px)}
+
+  /* 经文：卡片加宽，最长的一段也只占三四行 */
+  .verse{max-width:980px;padding:26px 44px 24px}
+  .verse .ref{margin-bottom:10px}
+  .verse .txt{font-size:24px;font-size:clamp(20px,3.5dvh,29px);line-height:1.8}
+
+  /* 桌面：按剩余高度缩放，整张桌子一眼看全 */
+  #s-table .tablewrap{max-width:none;width:min(100%, calc((100vh - 290px) * 4 / 3));
+    width:min(100%, calc((100dvh - 290px) * 4 / 3))}
+
+  /* 提问：卡片加宽，选项两列 */
+  .qcard{max-width:860px;padding:24px 30px}
+  .opts{display:grid;grid-template-columns:1fr 1fr}
+
+  /* 结果：左边分数和按钮，右边逐题回顾 */
+  #s-result .center{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);
+    grid-template-areas:"tag tag" "score review" "btns review";
+    grid-template-rows:auto auto 1fr;align-content:center;align-items:start;column-gap:24px;row-gap:14px}
+  #s-result .tag{grid-area:tag;justify-self:center}
+  #s-result .scorecard{grid-area:score;max-width:none;padding:24px 22px}
+  #s-result .review{grid-area:review;max-width:none;max-height:calc(100vh - 110px);max-height:calc(100dvh - 110px);overflow:auto}
+  #s-result .btnrow{grid-area:btns}
+}
+
 </style>
 </head>
-<body>
+<body data-screen="s-start">
 <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
 
 <div class="wrap">
@@ -274,6 +328,7 @@ footer.foot{text-align:center;color:#c3b79f;font-size:10.5px;margin-top:26px;let
         </div>
       </div>
       <button class="btn" id="toBlocks" disabled>开 始 挑 战</button>
+      <div class="score-guide">🎁 持有恩典卡？经文开始背诵后可点「关键词提示」；物品进入答题后可点「再看 6 秒」。每局限用一次，最高得 6 分。</div>
       <div class="hint">工作人员操作 · 参与者暂时不要看屏幕</div>
     </div>
   </section>
@@ -306,13 +361,13 @@ footer.foot{text-align:center;color:#c3b79f;font-size:10.5px;margin-top:26px;let
         <div class="bar"><i id="verseBar"></i></div>
       </div>
       <div class="verse" id="verseCard">
+        <span class="badge">🎁 恩典卡提示</span>
         <div class="ref" id="verseRef"></div>
         <div class="txt" id="verseTxt"></div>
       </div>
-      <div class="grace-clue" id="verseClue" aria-live="polite"></div>
       <div class="hint" id="verseHint">请在时间内默记这节经文</div>
       <div class="btnrow" id="verseCtl"><button class="btn ghost" id="verseSkip">我记好了 · 提前遮住</button></div>
-      <div class="btnrow" id="verseRecite" style="display:none"><button class="btn ghost" id="verseGrace">🎁 使用恩典卡 · 关键词提示</button><button class="btn" id="verseReveal">显 示 答 案</button></div>
+      <div class="btnrow" id="verseRecite" style="display:none"><button class="btn grace" id="verseGrace">🎁 恩典卡：关键词提示</button><button class="btn" id="verseReveal">显 示 答 案</button></div>
       <div class="btnrow" id="verseJudge" style="display:none">
         <button class="btn ok" data-score="9">9 分 · 完整准确</button>
         <button class="btn" data-score="6">6 分 · 小错自纠</button>
@@ -363,7 +418,7 @@ footer.foot{text-align:center;color:#c3b79f;font-size:10.5px;margin-top:26px;let
           <div class="atxt" id="qanstxt"></div>
         </div>
       </div>
-      <div class="btnrow" id="quizCtl"><button class="btn ghost" id="itemGrace">🎁 使用恩典卡 · 再看 6 秒</button><button class="btn" id="revealBtn">显 示 答 案</button></div>
+      <div class="btnrow" id="quizCtl"><button class="btn grace" id="itemGrace">🎁 恩典卡：再看 6 秒</button><button class="btn" id="revealBtn">显 示 答 案</button></div>
       <div class="btnrow" id="judgeCtl" style="display:none">
         <button class="btn ok" data-v="1">✓ 答 对</button>
         <button class="btn no" data-v="0">✗ 答 错</button>
@@ -385,7 +440,8 @@ footer.foot{text-align:center;color:#c3b79f;font-size:10.5px;margin-top:26px;let
       <div class="review" id="rReview"></div>
       <div class="reviewdesk" id="rDeskWrap">
         <div class="tablewrap"><div class="desk named" id="rDesk"></div></div>
-        <div class="hint">当时的桌面摆放（已标出名字）</div>
+        <div class="hint">当时的桌面摆放（已标出名字）· 点空白处关闭</div>
+        <button class="btn" id="closeDesk">关 闭</button>
       </div>
       <div class="btnrow">
         <button class="btn ghost" id="reviewDesk" style="display:none">回 看 桌 面</button>
@@ -514,7 +570,8 @@ const rnd = n => Math.floor(Math.random()*n);
 const rf = (a,b) => a + Math.random()*(b-a);
 const pick = a => a[rnd(a.length)];
 const shuffle = a => { const b=a.slice(); for(let i=b.length-1;i>0;i--){const j=rnd(i+1);[b[i],b[j]]=[b[j],b[i]];} return b; };
-function show(id){ $$(".screen").forEach(s=>s.classList.remove("active")); $("#"+id).classList.add("active"); window.scrollTo({top:0,behavior:"smooth"}); }
+function show(id){ $$(".screen").forEach(s=>s.classList.remove("active")); $("#"+id).classList.add("active");
+  document.body.dataset.screen = id; window.scrollTo({top:0,behavior:"smooth"}); }
 function compact(on){ $("#topHead").classList.toggle("compact", !!on); }
 
 /* 取同色的亮/暗档，做受光渐变与描边 */
@@ -629,7 +686,7 @@ function startVerse(){
   S.tier = tier;
   S.verse = pick(versePool(S.people));
   S.graceUsed = false;
-  $("#verseClue").classList.remove("on");
+  $("#verseCard").classList.remove("clued");
   $("#verseRef").textContent = S.verse.r;
   $("#verseTxt").textContent = S.verse.t;
   $("#verseCard").classList.remove("hidden-v");
@@ -658,23 +715,34 @@ function showRecite(){
   $("#verseHint").textContent = S.people >= 2
     ? "全组一起背诵这一整段，谁背哪一句由你们自己商量，合起来完整即算通过"
     : "参与者凭记忆背诵，工作人员核对";
+  if(!S.graceUsed) $("#verseHint").textContent += " · 持有恩典卡可点击下方金色按钮";
   $("#verseRecite").style.display = "";
   $("#verseGrace").style.display = S.graceUsed ? "none" : "";
 }
-function verseKeyword(text){
-  const parts = text.split(/[，。；！？、]/).map(x=>x.match(/[\u4e00-\u9fa5]/g)?.join("") || "").filter(x=>x.length>=4);
-  return (parts[Math.floor(parts.length/2)] || text).slice(0,4);
+/* 恩典卡：整节经文模糊显示，每个分句只露出开头 1–2 个字，标点保留看得出句子结构 */
+function verseClueHTML(text){
+  const esc = t => t.replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  return text.split(/([，。；：！？])/).map(seg=>{
+    if(!seg) return "";
+    if(/^[，。；：！？]$/.test(seg)) return '<span class="p">'+seg+'</span>';
+    const show = seg.length >= 4 ? 2 : 1;
+    return '<span class="k">'+esc(seg.slice(0,show))+'</span>' +
+           (seg.length > show ? '<span class="b">'+esc(seg.slice(show))+'</span>' : "");
+  }).join("");
 }
 $("#verseGrace").addEventListener("click",()=>{
-  if(S.graceUsed || !confirm("使用本局唯一一张恩典卡？将显示一个经文关键词，最高得 6 分。")) return;
+  if(S.graceUsed || !confirm("使用本局唯一一张恩典卡？将显示模糊的经文，只露出每句开头的几个字，最高得 6 分。")) return;
   S.graceUsed = true;
-  $("#verseClue").textContent = "🎁 关键词提示：" + verseKeyword(S.verse.t);
-  $("#verseClue").classList.add("on");
+  $("#verseTxt").innerHTML = verseClueHTML(S.verse.t);
+  $("#verseCard").classList.remove("hidden-v");
+  $("#verseCard").classList.add("clued");
+  $("#verseHint").textContent = $("#verseHint").textContent.replace(" · 持有恩典卡可点击下方金色按钮","") + " · 已使用恩典卡，本局最高 6 分";
   $("#verseGrace").style.display = "none";
 });
 $("#verseSkip").addEventListener("click", hideVerse);
 $("#verseReveal").addEventListener("click",()=>{
-  $("#verseCard").classList.remove("hidden-v");
+  $("#verseTxt").textContent = S.verse.t;
+  $("#verseCard").classList.remove("hidden-v","clued");
   $("#verseTag").textContent = "对 照 答 案";
   $("#verseTag").className = "tag leaf";
   $("#verseRecite").style.display = "none";
@@ -964,7 +1032,8 @@ function renderQ(){
   const q = S.questions[S.qi];
   $("#qnum").textContent = "QUESTION " + (S.qi+1) + " / " + S.questions.length;
   $("#quizStatus").textContent = ["热身题","进阶题","挑战题"][q.level] +
-    " · 已答对 " + S.marks.filter(Boolean).length + " 题";
+    " · 已答对 " + S.marks.filter(Boolean).length + " 题" +
+    (S.graceUsed ? " · 恩典卡已使用" : " · 持卡可点下方金色提示按钮");
   $("#qtext").textContent = q.q;
   const o = $("#qopts"); o.innerHTML = "";
   if(q.o) q.o.forEach((x,i)=>{
@@ -1047,16 +1116,17 @@ $("#editLast").addEventListener("click",()=>{
   } else editQuestion(S.questions.length-1);
 });
 $("#reviewDesk").addEventListener("click",()=>{
-  const w = $("#rDeskWrap"), on = w.classList.toggle("on");
-  $("#reviewDesk").textContent = on ? "收 起 桌 面" : "回 看 桌 面";
-  if(on){ renderDesk($("#rDesk"), true); w.scrollIntoView({behavior:"smooth", block:"center"}); }
+  renderDesk($("#rDesk"), true);
+  $("#rDeskWrap").classList.add("on");
 });
+$("#closeDesk").addEventListener("click",()=>$("#rDeskWrap").classList.remove("on"));
+$("#rDeskWrap").addEventListener("click",e=>{ if(e.target.id==="rDeskWrap") $("#rDeskWrap").classList.remove("on"); });
 $("#again").addEventListener("click",()=>{
   clearInterval(S.timer); clearInterval(S.ready); clearTimeout(S.dt);
   $("#ready").classList.remove("on");
   S.marks=[]; S.questions=[]; S.qi=0; S.mode=""; S.versePoints=null;
   S.graceUsed=false;
-  $("#verseClue").classList.remove("on");
+  $("#verseCard").classList.remove("clued");
   $$("#people .pbtn").forEach(x=>x.classList.remove("sel"));
   $("#toBlocks").disabled = true;
   compact(false);
