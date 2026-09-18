@@ -29,11 +29,6 @@ body{
 .wrap{position:relative;z-index:1;flex:1;width:100%;max-width:940px;margin:0 auto;
   padding:18px 20px 44px;display:flex;flex-direction:column}
 
-.navback{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;
-  background:var(--card);border:1px solid var(--line);border-radius:999px;
-  padding:8px 15px;font-size:13px;color:var(--ink);text-decoration:none;font-weight:600;
-  box-shadow:0 2px 6px rgba(38,33,27,.05);transition:.15s var(--ease)}
-.navback:hover{background:var(--raise)}
 header.top{text-align:center;margin:22px 0 20px;transition:.35s var(--ease)}
 header.top.compact{margin:10px 0 14px}
 header.top.compact .logo,header.top.compact .sub{display:none}
@@ -257,8 +252,6 @@ footer.foot{text-align:center;color:#c3b79f;font-size:10.5px;margin-top:26px;let
 <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
 
 <div class="wrap">
-  <a class="navback" href="https://lifepassport.netlify.app/staff">← 工作人员</a>
-
   <header class="top" id="topHead">
     <div class="logo"><i></i><i></i><i></i><i></i></div>
     <div class="kicker">Life Passport · Station 05</div>
@@ -393,10 +386,8 @@ footer.foot{text-align:center;color:#c3b79f;font-size:10.5px;margin-top:26px;let
       <div class="btnrow">
         <button class="btn ghost" id="reviewDesk" style="display:none">回 看 桌 面</button>
         <button class="btn ghost" id="editLast" style="display:none">↶ 改判最后一题</button>
-        <button class="btn" id="goStaff">返 回 工 作 人 员 页</button>
         <button class="btn ghost" id="again">再 玩 一 次</button>
       </div>
-      <div class="hint" id="autoHint"></div>
     </div>
   </section>
 
@@ -410,8 +401,6 @@ footer.foot{text-align:center;color:#c3b79f;font-size:10.5px;margin-top:26px;let
 
 <script>
 "use strict";
-const STAFF_URL = "https://lifepassport.netlify.app/staff";
-
 /* ---------- 30 件随机物件 ---------- */
 const OBJECTS = [
   {e:"📖",n:"圣经"},   {e:"🥤",n:"水杯"},   {e:"🍌",n:"香蕉"},   {e:"🔑",n:"钥匙"},
@@ -542,7 +531,7 @@ if(!(CSS && CSS.supports && (CSS.supports("mask-image","url(a)") || CSS.supports
 }
 
 const S = { people:0, count:0, placed:[], unused:[],
-            mode:"", verse:null, tier:null, questions:[], qi:0, marks:[], timer:null, auto:null, dt:null,
+            mode:"", verse:null, tier:null, questions:[], qi:0, marks:[], timer:null, dt:null,
             ready:null, versePoints:null };
 const CONFIG = { 1:{items:8, dup:1, q:3}, 2:{items:10, dup:1, q:4}, 3:{items:12, dup:2, q:5} };
 
@@ -966,7 +955,6 @@ $$("#judgeCtl .btn").forEach(b=>b.addEventListener("click",()=>{
   if(S.qi < S.questions.length) renderQ(); else finish();
 }));
 function editQuestion(index){
-  clearInterval(S.auto);
   S.marks = S.marks.slice(0,index);
   S.qi = index;
   renderQ();
@@ -986,7 +974,7 @@ function finish(){
   $("#rTag").textContent = S.mode === "verse" ? "经 文 关 结 束" : "观 察 关 结 束";
   $("#rTag").className = "tag " + (pass ? "leaf" : "seal");
   $("#rMsg").textContent = pass ? "通 关 成 功 🎉" : "挑 战 结 束";
-  $("#rSub").textContent = "工作人员请在 Life Passport 后台录入本关分数；本页面不会自动记分。";
+  $("#rSub").textContent = "请工作人员在另一台设备记录本关分数；此游戏页面不会自动记分。";
   $("#scoreGuide").innerHTML = '<strong>'+points+' 分</strong> · 建议录入分数<br>' +
     (S.mode === "verse"
       ? "9 分完整准确 · 6 分少量错误且自行纠正 · 3 分提示后完成 · 0 分未完成"
@@ -1007,15 +995,9 @@ function finish(){
   } else rb.style.display = "none";
   compact(false);
   show("s-result");
-  clearInterval(S.auto);
-  let left = 20;
-  const tick = () => $("#autoHint").textContent = left + " 秒后自动返回工作人员页面";
-  tick();
-  S.auto = setInterval(()=>{ left--; tick(); if(left<=0){ clearInterval(S.auto); location.href = STAFF_URL; } },1000);
 }
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 $("#editLast").addEventListener("click",()=>{
-  clearInterval(S.auto);
   if(S.mode === "verse"){
     $("#verseJudge").style.display = "";
     show("s-verse");
@@ -1025,12 +1007,9 @@ $("#reviewDesk").addEventListener("click",()=>{
   const w = $("#rDeskWrap"), on = w.classList.toggle("on");
   $("#reviewDesk").textContent = on ? "收 起 桌 面" : "回 看 桌 面";
   if(on){ renderDesk($("#rDesk"), true); w.scrollIntoView({behavior:"smooth", block:"center"}); }
-  clearInterval(S.auto);                       /* 看回放时别自动跳走 */
-  $("#autoHint").textContent = "看完请手动返回工作人员页面";
 });
-$("#goStaff").addEventListener("click",()=>{ clearInterval(S.auto); location.href = STAFF_URL; });
 $("#again").addEventListener("click",()=>{
-  clearInterval(S.auto); clearInterval(S.timer); clearInterval(S.ready); clearTimeout(S.dt);
+  clearInterval(S.timer); clearInterval(S.ready); clearTimeout(S.dt);
   $("#ready").classList.remove("on");
   S.marks=[]; S.questions=[]; S.qi=0; S.mode=""; S.versePoints=null;
   $$("#people .pbtn").forEach(x=>x.classList.remove("sel"));
